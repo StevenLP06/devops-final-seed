@@ -1,0 +1,5 @@
+skips: []
+tests: []
+exclude_dirs:
+  - venv
+  - tests
