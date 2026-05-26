@@ -13,6 +13,7 @@ import sys
 import tempfile
 import importlib
 import pytest
+from unittest.mock import patch
 
 SRC = os.path.join(os.path.dirname(__file__), "..", "src")
 if SRC not in sys.path:
@@ -21,12 +22,18 @@ if SRC not in sys.path:
 
 @pytest.fixture
 def client():
-    """
-    Fixture principal: crea una DB temporal, recarga el módulo app
-    apuntando a esa DB y devuelve un cliente de test Flask.
-    """
     db_fd, db_path = tempfile.mkstemp(suffix=".db")
     os.environ["DB_PATH"] = db_path
+
+    # Limpiar colectores de Prometheus antes de recargar
+    from prometheus_client import REGISTRY
+    collectors_to_remove = [c for c in list(REGISTRY._names_to_collectors.values())
+                            if hasattr(c, '_name') and 'tasks' in c._name]
+    for c in set(collectors_to_remove):
+        try:
+            REGISTRY.unregister(c)
+        except Exception:
+            pass
 
     import app as app_module
     importlib.reload(app_module)
@@ -178,3 +185,25 @@ def test_actualizar_tarea_inexistente_retorna_404(client):
 
     assert resp.status_code == 404
     assert "error" in data
+
+from unittest.mock import patch
+
+# ── Test 13 — /health devuelve 503 cuando la DB falla ────────────────────────
+def test_health_db_caida(client):
+    """Simula falla de conexión a la DB para cubrir el bloque except."""
+    with patch("app.get_db", side_effect=Exception("DB no disponible")):
+        resp = client.get("/health")
+        data = resp.get_json()
+
+        assert resp.status_code == 503
+        assert data["status"] == "unhealthy"
+        assert "error" in data
+
+# ── Test 14 — /health devuelve 200 cuando todo está bien ─────────────────────
+def test_health_ok(client):
+    resp = client.get("/health")
+    data = resp.get_json()
+
+    assert resp.status_code == 200
+    assert data["status"] == "healthy"
+    assert data["db"] == "connected"
