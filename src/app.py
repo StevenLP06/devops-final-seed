@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify
 import sqlite3
 import os
-import time
 import logging
 from pythonjsonlogger import jsonlogger
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import REGISTRY, Counter
+
 
 # ─── Logging estructurado JSON ────────────────────────────────────────────────
 logger = logging.getLogger("todo_api")
@@ -19,9 +19,11 @@ formatter = jsonlogger.JsonFormatter(
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+
 # ─── App Flask ────────────────────────────────────────────────────────────────
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)
+
 
 # Reutiliza el contador si ya fue registrado (evita error en tests)
 if "tasks_created_total" not in REGISTRY._names_to_collectors:
@@ -33,6 +35,7 @@ else:
     tasks_created_counter = REGISTRY._names_to_collectors["tasks_created_total"]
 
 DB_PATH = os.environ.get("DB_PATH", "tasks.db")
+
 
 # ─── Base de datos ────────────────────────────────────────────────────────────
 def get_db():
@@ -58,6 +61,7 @@ def init_db():
 
 
 init_db()
+
 
 # ─── Endpoints de observabilidad ──────────────────────────────────────────────
 @app.route("/health", methods=["GET"])

@@ -124,6 +124,7 @@ def test_actualizar_tarea(client):
     assert data["title"] == "Actualizada"
     assert data["completed"] in (1, True)
 
+
 # ── Test 8 — PUT /tasks/<id> con body vacío devuelve 400 ─────────────────────
 def test_actualizar_sin_datos_retorna_400(client):
     created = client.post("/tasks", json={"title": "Para actualizar"}).get_json()
@@ -178,6 +179,7 @@ def test_flujo_crud_completo(client):
     client.delete(f"/tasks/{task_id}")
     assert client.get(f"/tasks/{task_id}").status_code == 404
 
+
 # ── Test 12 — PUT /tasks/<id> inexistente devuelve 404 ───────────────────────
 def test_actualizar_tarea_inexistente_retorna_404(client):
     resp = client.put("/tasks/99999", json={"title": "No existe"})
@@ -186,7 +188,6 @@ def test_actualizar_tarea_inexistente_retorna_404(client):
     assert resp.status_code == 404
     assert "error" in data
 
-from unittest.mock import patch
 
 # ── Test 13 — /health devuelve 503 cuando la DB falla ────────────────────────
 def test_health_db_caida(client):
@@ -198,6 +199,7 @@ def test_health_db_caida(client):
         assert resp.status_code == 503
         assert data["status"] == "unhealthy"
         assert "error" in data
+
 
 # ── Test 14 — /health devuelve 200 cuando todo está bien ─────────────────────
 def test_health_ok(client):
